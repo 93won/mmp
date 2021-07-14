@@ -38,8 +38,12 @@ public:
 
     void update(const Gaussian &g){
 
-        double delta = calcDist(this->mean, g.mean);
-        if(delta > 0.0){
+        vector<double> delta = calcDist(this->mean, g.mean);
+
+        double trans = sqrt(pow(delta[0], 2) + pow(delta[1], 2));
+        double rot = delta[2];
+
+        if(trans > 0.0 || rot > 0.0){
             this->mean = g.mean;
             this->cov = g.cov;
         }

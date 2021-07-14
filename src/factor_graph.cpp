@@ -172,9 +172,7 @@ void FactorGraph::buildMsgFromVarToFactor(int _idx_factor, string _type, mutex& 
                 vector<Gaussian> exact_product;
 
                 if(mixtures.size() > 1){
-                    //cout<<"size mixture before : "<<mixtures.size()<<endl;
                     exact_product = move(exactSampling(mixtures, this->dim, true));
-                    //cout<<"size mixture after : "<<exact_product.size()<<endl;
                 }
                 else{
                     exact_product = mixtures[0];
@@ -196,9 +194,7 @@ void FactorGraph::buildMsgFromVarToFactor(int _idx_factor, string _type, mutex& 
 
 
 void FactorGraph::buildMsgFromFactorToVar(int _idx_factor, string _type, mutex& m){
-
     
-
     shared_ptr<Edge> edge(new Edge());
     shared_ptr<Edge> edge_source(new Edge());
 
@@ -233,43 +229,50 @@ void FactorGraph::buildMsgFromFactorToVar(int _idx_factor, string _type, mutex& 
     //     lock_guard<mutex> lock_guard(m);
 
     if(isValid){
-        shared_ptr<Message> msg = edge_source->msg_var_to_factor;
-        shared_ptr<Message> msg_new(new Message(_type, edge->var, this->factors[_idx_factor]));
+    
+            shared_ptr<Message> msg;
+            msg = edge_source->msg_var_to_factor;
+            shared_ptr<Message> msg_new(new Message(_type, edge->var, this->factors[_idx_factor]));
 
-        vector<Gaussian> gs;
-        vector<Gaussian> gs_source = edge_source->msg_var_to_factor->gs;
+            vector<Gaussian> gs;
+            vector<Gaussian> gs_source = edge_source->msg_var_to_factor->gs;
 
-        double w_sum = 0;
-
-        for(auto& z : zs){
-            //{
-            //    c
-                //for(auto iter = edge_source->msg_var_to_factor->gs.begin(); iter != edge_source->msg_var_to_factor->gs.end(); iter++){
-            for(auto& g : gs_source){
-                if(!g.isNull){
-                    {
-                        lock_guard<mutex> lock_guard(m);
-                        vector<double> mean_source = {g.mean[0], g.mean[1], g.mean[2]};           
-                        Eigen::Matrix3d T = (v2t((g.mean)))*(v2t(z.mean));
-                        vector<double> mean = t2v(T);
-                        vector<double> cov = {g.cov[0]+z.cov[0], g.cov[1]+z.cov[1], g.cov[2]+z.cov[2]};
-                        gs.emplace_back(Gaussian(this->dim, g.weight*z.weight, mean, cov)); // weight mul is right?
-                        w_sum += g.weight*(z.weight);
-                    }
+            double w_sum = 0;
+            
+            for(auto& z : zs){
+                if(!z.isNull){
+                    for(auto& g : gs_source){
+                        if(!g.isNull){
+                                {
+                                    lock_guard<mutex> lock_guard(m);
+                                    vector<double> mean_source = {g.mean[0], g.mean[1], g.mean[2]};
+                                    Eigen::Matrix3d T = (v2t((g.mean)))*(v2t(z.mean));
+                                    vector<double> mean = t2v(T);
+                                    vector<double> cov = {g.cov[0]+z.cov[0], g.cov[1]+z.cov[1], g.cov[2]+z.cov[2]};
+                                    gs.emplace_back(Gaussian(this->dim, g.weight*z.weight, mean, cov)); // weight mul is right?
+                                    w_sum += g.weight*(z.weight);
+                                }
+                        }
+                    } 
                 }
-            }        
-        }
+                else{
+                    
+                }
+                
+            }
+            
 
-        for(auto& g : gs){
-            g.weight /= w_sum;
-        }
+            for(auto& g : gs){
+                g.weight /= w_sum;
+            }
 
-        msg_new->setGaussians(gs);
-        edge->msg_factor_to_var = msg_new;
-        //cout<<"DEBUG ~ Sum of weights : "<<w_sum<<" "<<w_sum_norm<<endl;
-
-    } 
+            msg_new->setGaussians(gs);
+            edge->msg_factor_to_var = msg_new;
+            //cout<<"DEBUG ~ Sum of weights : "<<w_sum<<" "<<w_sum_norm<<endl;
+    }
+    
 }
+
 
 void FactorGraph::propagateMsg(int _idx_factor, mutex& m){
 
@@ -286,8 +289,6 @@ void FactorGraph::propagateMsg(int _idx_factor, mutex& m){
 
         msg->setGaussians(this->factors[_idx_factor]->zs);
 
-        // assign to edge
-
         //cout<<"Build msg from var "<<this->factors[_idx_factor]->to_edge->var->key<<" to factor "<<this->factors[_idx_factor]->to_edge->factor->key<<"  //  Type : "<<"to"<<endl;
         this->factors[_idx_factor]->to_edge->msg_var_to_factor = msg;
 
@@ -299,12 +300,14 @@ void FactorGraph::propagateMsg(int _idx_factor, mutex& m){
     }
 
     else{
-        
-        this->buildMsgFromVarToFactor(_idx_factor, "from", m);
-        this->buildMsgFromFactorToVar(_idx_factor, "to", m);
-        this->buildMsgFromVarToFactor(_idx_factor, "to", m);
-        this->buildMsgFromFactorToVar(_idx_factor, "from", m);        
-    }   
+        {
+            //lock_guard<mutex> lock_guard(m);
+            this->buildMsgFromVarToFactor(_idx_factor, "from", m);
+            this->buildMsgFromFactorToVar(_idx_factor, "to", m);
+            this->buildMsgFromVarToFactor(_idx_factor, "to", m);
+            this->buildMsgFromFactorToVar(_idx_factor, "from", m);
+        }
+    }     
 }
 
 void FactorGraph::updateVar(int _idx_var){
@@ -333,11 +336,15 @@ void FactorGraph::updateVar(int _idx_var){
 
     int max_idx = max_element(ws.begin(), ws.end()) - ws.begin();
 
-    //vector<double> temp_vec =  this->vars[_idx_var]->mean;
+    vector<double> temp_vec =  this->vars[_idx_var]->mean;
 
     this->vars[_idx_var]->update(products[max_idx]);
 
     //this->mean_delta += calcDist(temp_vec, this->vars[_idx_var]->mean);
+    temp_vec = calcDist(temp_vec, this->vars[_idx_var]->mean);
+
+    this->mean_delta += sqrt(pow(temp_vec[0], 2) + pow(temp_vec[1],2) + pow(temp_vec[2],2));
+
 }
 
 void FactorGraph::getUpdateOrdetJT(){
@@ -371,6 +378,14 @@ void FactorGraph::getUpdateOrdetJT(){
 
     /* To Do */
     // Find shortest path and add edge in the factor graph
+
+    // igraph_vector_t vetrices;
+    // igraph_vector_t edges;
+    // igraph_integer_t from;
+    // igraph_integer_t to;
+    // igraph_integer_t to;
+    
+
     
     // Temporary solution
     igraph_vector_init(&e, nb_fill_in);
@@ -536,6 +551,7 @@ void FactorGraph::getUpdateOrdetJT(){
             {   
                 //cout<<!count(idx_factor.begin(), idx_factor.end(), nf->idx)<<endl;
                 if(!count(idx_factor.begin(), idx_factor.end(), nf->idx)){
+                    //idx_factor.emplace_back(nf->idx);
                     if(!used[nf->idx]){
                         idx_factor.emplace_back(nf->idx);
                         used[nf->idx] = true;
@@ -560,16 +576,16 @@ void FactorGraph::propagateMsgAll(bool JT, mutex& m){
     else{
         int nb_factors = this->factors.size();
 
-        // auto randeng = std::default_random_engine {};
-        // vector<int> order(nb_factors);
-        // iota(order.begin(), order.end(), 0);
-        // shuffle(order.begin(), order.end(), randeng);
+        auto randeng = std::default_random_engine {};
+        vector<int> order(nb_factors);
+        iota(order.begin(), order.end(), 0);
+        shuffle(order.begin(), order.end(), randeng);
 
-        // omp_set_num_threads(15);
-        // #pragma omp parallel for
+        omp_set_num_threads(20);
+        #pragma omp parallel for
         for(int i=0; i<nb_factors; i++){
             //cout<<i<<endl;
-            this->propagateMsg(i, m);           
+            this->propagateMsg(order[i], m);           
             
             // {
             // lock_guard<mutex> lock_guard(m);

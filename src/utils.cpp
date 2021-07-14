@@ -48,7 +48,7 @@ Gaussian multGaussians(const Gaussian& g1, const Gaussian& g2){
 
     // Null hypothesis case
     if(g1.isNull && g2.isNull){
-        return Gaussian(true, g1.weight*g2.weight);
+        return Gaussian(true);
     }
 
     else if(!g1.isNull and g2.isNull){
@@ -187,6 +187,7 @@ vector<vector<int>> cartProduct (const vector<vector<int>>& v) {
 
 vector<Gaussian> exactSampling(vector<vector<Gaussian>>& mixtures, int dim, bool reparam){
     
+    
     // make combinations - start
     if(mixtures.size()==1){
         return mixtures[0];
@@ -214,11 +215,8 @@ vector<Gaussian> exactSampling(vector<vector<Gaussian>>& mixtures, int dim, bool
     vector<vector<double>> covs(combs.size(), vector<double>(3));
     vector<double> ws(combs.size());
 
-
-    // exact sampling
-    //omp_set_num_threads(5);
-    //#pragma omp parallel for
-    //for(auto& comb : combs){
+    // omp_set_num_threads(5);
+    // #pragma omp parallel for
     for(int c=0; c<combs.size(); c++){
         Gaussian g_mul = move(multGaussians(mixtures[0][combs[c][0]], mixtures[1][combs[c][1]]));
 
@@ -254,7 +252,7 @@ vector<Gaussian> exactSampling(vector<vector<Gaussian>>& mixtures, int dim, bool
     vector<double> ws_new;
 
     for(int k=0; k<means.size(); k++){
-        if(ws[k] >= w_max*0.3){
+        if(ws[k] >= w_max*0.5){
             means_new.push_back(means[k]);
             covs_new.push_back(covs[k]);
             ws_new.push_back(ws[k]);
@@ -268,7 +266,7 @@ vector<Gaussian> exactSampling(vector<vector<Gaussian>>& mixtures, int dim, bool
 
     if(reparam){
         //cout<<"Before : "<<means.size()<<endl;
-        getMode(means, covs, ws, 10, 3, 300);
+        getMode(means, covs, ws, 5, 3, 100);
         //cout<<"After : "<<means.size()<<endl;
     }
 
@@ -355,6 +353,9 @@ void getMode(vector<vector<double>>& means, vector<vector<double>>& covs, vector
 
         vector<vector<double>> fx(n, vector<double>(3));
         
+
+        omp_set_num_threads(20);
+        #pragma omp parallel for
         for(int i=0; i<n; i++){
             
             // calculate ks(xi)
@@ -428,7 +429,7 @@ void getMode(vector<vector<double>>& means, vector<vector<double>>& covs, vector
     }
 
     int MINIMUM_POINTS = 1;
-    double EPSILON = 1;
+    double EPSILON = 0.5;
 
     vector<Point> pts;
     vec2pts(xs, pts);
@@ -482,7 +483,7 @@ void getMode(vector<vector<double>>& means, vector<vector<double>>& covs, vector
     vector<double> ws_new2;
 
     for(int k=0; k<means.size(); k++){
-        if(ws[k] >= w_max*0.3){
+        if(ws[k] >= w_max*0.5){
             means_new2.push_back(means[k]);
             covs_new2.push_back(covs[k]);
             ws_new2.push_back(ws[k]);
@@ -569,7 +570,7 @@ void readCSV(string path, vector<vector<int>>& _idx_v, vector<vector<double>>& _
 void readCSV_MH(string path, vector<vector<int>>& _idx_v, vector<vector<vector<double>>>& _odom, int last_idx){
     string data = path;
     ifstream in(data.c_str());
-
+    
     typedef boost::tokenizer<boost::escaped_list_separator<char>> Tokenizer;
     vector<string> vec;
     string line;
@@ -657,7 +658,7 @@ double error_per(vector<double>& est, vector<double>& gt){
 }
 
 
-double calcDist(const vector<double>& p1, const vector<double>& p2){
+vector<double> calcDist(const vector<double>& p1, const vector<double>& p2){
     double h1 = p1[2];
     double h2 = p2[2];
 
@@ -684,8 +685,10 @@ double calcDist(const vector<double>& p1, const vector<double>& p2){
     else if(h2 < pi/2 && h1 > 3.0/2.0*pi){
         h1 -= pi*2;
     }
+    vector<double> result = {abs(p1[0] - p2[0]), abs(p1[1] - p2[1]), abs(p1[2] - p2[2])};
 
-    return sqrt(pow(p1[0] - p2[0],2)+pow(p1[1] - p2[1],2)+pow(p1[2] - p2[2],2));
+    return result;
+
 }
 
 

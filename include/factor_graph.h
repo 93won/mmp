@@ -60,6 +60,7 @@ public:
     }
 
     double getError(vector<vector<double>>& gt){
+
         int nb_v = this->vars.size();
 
         double error = 0.0;
@@ -70,6 +71,7 @@ public:
         }
 
         return error/((double)nb_v);
+        
     }
 
     void showVarPose(int _idx){

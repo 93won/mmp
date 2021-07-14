@@ -97,7 +97,7 @@ void getMode(vector<vector<double>>& means, vector<vector<double>>& covs, vector
 
 void vec2pts(vector<vector<double>>& pts_in, vector<Point>& pts_out);
 
-double calcDist(const vector<double>& p1, const vector<double>& p2);
+vector<double> calcDist(const vector<double>& p1, const vector<double>& p2);
 
 void readCSV_MH(string path, vector<vector<int>>& _idx_v, vector<vector<vector<double>>>& _odom, int last_idx);
 
