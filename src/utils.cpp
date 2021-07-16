@@ -24,7 +24,6 @@ const Eigen::Matrix3d v2t(vector<double>& vec){
 const vector<double> t2v(const Eigen::Ref<Eigen::Matrix3d>& mtx){
 
     double pi = M_PI;
-
     double x = mtx(0,2);
     double y = mtx(1,2);
     double heading = atan2(mtx(1,0), mtx(0,0));
@@ -56,7 +55,7 @@ Gaussian multGaussians(const Gaussian& g1, const Gaussian& g2){
     }
 
     else if(g1.isNull and !g2.isNull){
-        return g1;
+        return g2;
     }
 
 
@@ -185,13 +184,19 @@ vector<vector<int>> cartProduct (const vector<vector<int>>& v) {
 }
 
 
-vector<Gaussian> exactSampling(vector<vector<Gaussian>>& mixtures, int dim, bool reparam){
-    
+vector<Gaussian> exactSampling(vector<vector<Gaussian>>& mixtures, int dim, bool reparam, vector<string>& types, bool showMode){
     
     // make combinations - start
     if(mixtures.size()==1){
         return mixtures[0];
     }
+
+    // for(int i=0; i<mixtures.size(); i++){
+    //     if(types[i]=="loop"){
+    //         //cout<<mixtures.size()<<" "<<i<<" : loop"<<endl;
+    //         mixtures[i].emplace_back(Gaussian(true));
+    //     }
+    // }
 
     vector<vector<int>> sizes(mixtures.size());
 
@@ -215,23 +220,101 @@ vector<Gaussian> exactSampling(vector<vector<Gaussian>>& mixtures, int dim, bool
     vector<vector<double>> covs(combs.size(), vector<double>(3));
     vector<double> ws(combs.size());
 
-    // omp_set_num_threads(5);
+    //cout<<"possible combinations : "<<combs.size()<<endl;
+    Gaussian g_mul = Gaussian(true);
+    Gaussian g_mul_no_loop = Gaussian(true);
+    if(showMode)
+    cout<<"########################################################################"<<endl;
+    
+    // omp_set_num_threads(20);
     // #pragma omp parallel for
+    
     for(int c=0; c<combs.size(); c++){
-        Gaussian g_mul = move(multGaussians(mixtures[0][combs[c][0]], mixtures[1][combs[c][1]]));
+        //Gaussian g_mul = move(multGaussians(mixtures[0][combs[c][0]], mixtures[1][combs[c][1]]));
 
-        for(int i=2; i<mixtures.size(); i++){
+        for(int i=0; i<mixtures.size(); i++){
             g_mul = (multGaussians(g_mul, mixtures[i][combs[c][i]]));
+        }
 
+        for(int i=0; i<mixtures.size(); i++){
+            if(types[i]!="loop")
+                g_mul_no_loop = (multGaussians(g_mul_no_loop, mixtures[i][combs[c][i]]));
         }
 
         //g_mul.showInfo();
         double denominator = calcNormalPDF(g_mul.mean, g_mul.mean, g_mul.cov, dim)+1e-100;
         double numerator = 1.0;
 
+        vector<vector<int>> idxs;
+
+
+        // loop closure filtering
+        if(showMode)
+        cout<<"------------------------------------------------------------------------"<<endl;
         for(int i=0; i<mixtures.size(); i++){
-            numerator *= calcNormalPDF(g_mul.mean, mixtures[i][combs[c][i]].mean, mixtures[i][combs[c][i]].cov, dim);
+            //if(types[i] == "loop")
+            //    cout<<"type : "<<types[i]<<" prob : "<<prob<<endl;
+            if(types[i] == "loop")
+            {
+                double prob = calcNormalPDF(mixtures[i][combs[c][i]].mean, g_mul_no_loop.mean, g_mul_no_loop.cov, dim);
+                if(showMode){
+                cout<<i<<" loop : "<<mixtures[i][combs[c][i]].mean[0]<<" "<<mixtures[i][combs[c][i]].mean[1]<<" "<<mixtures[i][combs[c][i]].mean[2]<<endl;
+                cout<<i<<" betweens : "<<g_mul_no_loop.mean[0]<<" "<<g_mul_no_loop.mean[1]<<" "<<g_mul_no_loop.mean[2]<<endl;
+                cout<<i<<" probability : "<<prob<<endl;
+                }
+                if(prob > 1e-3){
+                    vector<int> _idxs = {i, combs[c][i]};
+                    idxs.push_back(_idxs);
+                }
+                //cout<<"type : "<<types[i]<<" prob : "<<prob<<endl;
+            }
+
+            else{
+                vector<int> _idxs = {i, combs[c][i]};
+                idxs.push_back(_idxs);
+            }
+
+            //if(!mixtures[i][combs[c][i]].isNull)
+            //    numerator *= (calcNormalPDF(g_mul.mean, mixtures[i][combs[c][i]].mean, mixtures[i][combs[c][i]].cov, dim) + 1e-7);
+            //else{
+            //    numerator *= 1e-7;
+            //}
         }
+
+        g_mul = Gaussian(true);
+        for(int i=0; i<idxs.size(); i++){
+            //cout<<g_mul.isNull<< " " <<mixtures[idxs[i][0]][idxs[i][1]].isNull<<endl;
+            g_mul = multGaussians(g_mul, mixtures[idxs[i][0]][idxs[i][1]]);
+            if(showMode)
+            cout<<"multiplied Gs : "<<mixtures[idxs[i][0]][idxs[i][1]].mean[0]<<" "<<mixtures[idxs[i][0]][idxs[i][1]].mean[1]<<" "<<mixtures[idxs[i][0]][idxs[i][1]].mean[2]<<endl;
+            //cout<<g_mul.isNull<< " " <<mixtures[idxs[i][0]][idxs[i][1]].isNull<<endl;
+        }
+
+        if(showMode)
+        cout<<"mul result : "<<g_mul.mean[0]<<" "<<g_mul.mean[1]<<" "<<g_mul.mean[2]<<endl;
+
+        denominator = calcNormalPDF(g_mul.mean, g_mul.mean, g_mul.cov, dim)+1e-12;
+        numerator = 1.0;
+
+        double numer_sum = 0.0;
+
+        for(int i=0; i<idxs.size(); i++){
+            numerator *= (calcNormalPDF(g_mul.mean, mixtures[idxs[i][0]][idxs[i][1]].mean, mixtures[idxs[i][0]][idxs[i][1]].cov, dim) + 1e-12);
+        }
+
+
+        if(g_mul.mean[0] == g_mul_no_loop.mean[0] && g_mul.mean[1] == g_mul_no_loop.mean[1] && g_mul.mean[2] == g_mul_no_loop.mean[2]){
+            if(showMode)
+            cout<<"No loop included..!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
+            numerator *= 1e-5;
+        }
+
+        if(showMode){
+            cout<<"numerator(before correction) = "<<numerator<<endl;
+        }
+
+        numerator = pow(numerator, 1.0/((double)idxs.size()));
+
         numerator += 1e-100;
 
         double w = (numerator/denominator);
@@ -239,35 +322,57 @@ vector<Gaussian> exactSampling(vector<vector<Gaussian>>& mixtures, int dim, bool
 
         means[cnt] = (g_mul.mean);
         covs[cnt] = (g_mul.cov);
+        if(showMode){
+        cout<<"numerator = "<<numerator<<endl;
+        cout<<"denominator = "<<denominator<<endl;
+        cout<<"weight = "<<w<<endl;
+        }
 
         cnt += 1;
     }
 
+    double w_sum2 = accumulate(ws.begin(), ws.end(), 0.0);
+
+    for(auto& w : ws){
+        w /= w_sum2;
+    } 
+
+    // double w_max = *max_element(ws.begin(), ws.end());
     
+    // vector<vector<double>> means_new;
+    // vector<vector<double>> covs_new;
+    // vector<double> ws_new;
 
-    double w_max = *max_element(ws.begin(), ws.end());
+    // for(int k=0; k<means.size(); k++){
+    //     if(ws[k] >= w_max*0.5){
+    //         means_new.push_back(means[k]);
+    //         covs_new.push_back(covs[k]);
+    //         ws_new.push_back(ws[k]);
+    //     }
+    // }
+
+    // means = move(means_new);
+    // covs = move(covs_new);
+    // ws = move(ws_new);
+
+    if(showMode)
+    cout<<"========================================================================"<<endl;
+
+    // for(auto& w : ws){
+    //     cout<<w<<endl;
+    // }
+
     
-    vector<vector<double>> means_new;
-    vector<vector<double>> covs_new;
-    vector<double> ws_new;
-
-    for(int k=0; k<means.size(); k++){
-        if(ws[k] >= w_max*0.5){
-            means_new.push_back(means[k]);
-            covs_new.push_back(covs[k]);
-            ws_new.push_back(ws[k]);
-        }
-    }
-
-    means = move(means_new);
-    covs = move(covs_new);
-    ws = move(ws_new);
 
 
     if(reparam){
-        //cout<<"Before : "<<means.size()<<endl;
+        if(showMode)
+        cout<<"Before : "<<means.size()<<endl;
+
         getMode(means, covs, ws, 5, 3, 100);
-        //cout<<"After : "<<means.size()<<endl;
+
+        if(showMode)
+        cout<<"After : "<<means.size()<<endl;
     }
 
     double w_sum = accumulate(ws.begin(), ws.end(), 0.0);
@@ -349,20 +454,25 @@ void getMode(vector<vector<double>>& means, vector<vector<double>>& covs, vector
     
 
     for(int iter=0; iter<max_iter; iter++){
+
+        //cout<<"before loop : "<<xs[0][0]<<" "<<xs[0][1]<<" "<<xs[0][2]<<endl;
+        
         int n = means.size();
 
         vector<vector<double>> fx(n, vector<double>(3));
         
 
-        omp_set_num_threads(20);
-        #pragma omp parallel for
+        // omp_set_num_threads(20);
+        // #pragma omp parallel for
         for(int i=0; i<n; i++){
             
             // calculate ks(xi)
             vector<double> ks(n);
 
             for(int j=0; j<n; j++){
-                ks[j] = ws[i]*calcNormalPDF(xs[j], means[i], covs[i], dim); // ks(xi) += k_ij
+                ks[j] = ws[i]*calcNormalPDF(xs[j], means[i], covs[i], dim) + 1e-7; // ks(xi) += k_ij
+
+                //cout<<"in loop : "<<ks[0]<<endl;
             }
 
             normalizeVector(ks);
@@ -380,8 +490,12 @@ void getMode(vector<vector<double>>& means, vector<vector<double>>& covs, vector
 
             for(int k=0; k<dim; k++){
                 fx[i][k] = (1.0/(kinfm_sum[k]+1e-100))*(kinfm_mean_sum[k]) - xs[i][k];
+
             }
         }
+
+        //cout<<"in loop : "<<fx[0][0]<<" "<<fx[0][1]<<" "<<fx[0][2]<<endl;
+
         vector<double> delta(n);
         
         for(int i=0; i<n; i++){
@@ -390,6 +504,10 @@ void getMode(vector<vector<double>>& means, vector<vector<double>>& covs, vector
                 delta[i] += sqrt(pow(fx[i][k], 2));
             }
         }
+
+
+        //cout<<"after loop : "<<xs[0][0]<<" "<<xs[0][1]<<" "<<xs[0][2]<<endl;
+
         // stop criteria
         if(iter == 0){
             minDelta = 0.0;
@@ -429,7 +547,7 @@ void getMode(vector<vector<double>>& means, vector<vector<double>>& covs, vector
     }
 
     int MINIMUM_POINTS = 1;
-    double EPSILON = 0.5;
+    double EPSILON = 0.01;
 
     vector<Point> pts;
     vec2pts(xs, pts);
@@ -476,23 +594,23 @@ void getMode(vector<vector<double>>& means, vector<vector<double>>& covs, vector
     covs = covs_new;
     ws = ws_new;
 
-    double w_max = *max_element(ws.begin(), ws.end());
+    // double w_max = *max_element(ws.begin(), ws.end());
 
-    vector<vector<double>> means_new2;
-    vector<vector<double>> covs_new2;
-    vector<double> ws_new2;
+    // vector<vector<double>> means_new2;
+    // vector<vector<double>> covs_new2;
+    // vector<double> ws_new2;
 
-    for(int k=0; k<means.size(); k++){
-        if(ws[k] >= w_max*0.5){
-            means_new2.push_back(means[k]);
-            covs_new2.push_back(covs[k]);
-            ws_new2.push_back(ws[k]);
-        }
-    }
+    // for(int k=0; k<means.size(); k++){
+    //     if(ws[k] >= w_max*0.5){
+    //         means_new2.push_back(means[k]);
+    //         covs_new2.push_back(covs[k]);
+    //         ws_new2.push_back(ws[k]);
+    //     }
+    // }
 
-    means = move(means_new2);
-    covs = move(covs_new2);
-    ws = move(ws_new2);
+    // means = move(means_new2);
+    // covs = move(covs_new2);
+    // ws = move(ws_new2);
 }
 
 

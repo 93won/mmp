@@ -79,7 +79,7 @@ void showMatrix(Eigen::Matrix3d _T);
 
 vector<vector<int>> cartProduct(const vector<vector<int>>& v);
 
-vector<Gaussian> exactSampling(vector<vector<Gaussian>>& mixtures, int dim, bool reparam);
+vector<Gaussian> exactSampling(vector<vector<Gaussian>>& mixtures, int dim, bool reparam, vector<string>& types, bool showMode);
 
 vector<int> intersection(vector<int> &v1, vector<int> &v2);
 

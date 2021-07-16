@@ -145,11 +145,13 @@ void FactorGraph::buildMsgFromVarToFactor(int _idx_factor, string _type, mutex& 
             //                   (~edge)
 
             vector<shared_ptr<Message>> msgs;
-
+            vector<string> types;
 
             for(auto iter = edge->var->neighbor_edges.begin(); iter != edge->var->neighbor_edges.end(); iter++){
 
                 bool isOtherSource =((*iter)->key != edge->key);
+
+                types.emplace_back((*iter)->factor->type);
 
                 if(isOtherSource){
                     msgs.push_back((*iter)->msg_factor_to_var);
@@ -172,7 +174,7 @@ void FactorGraph::buildMsgFromVarToFactor(int _idx_factor, string _type, mutex& 
                 vector<Gaussian> exact_product;
 
                 if(mixtures.size() > 1){
-                    exact_product = move(exactSampling(mixtures, this->dim, true));
+                    exact_product = move(exactSampling(mixtures, this->dim, true, types, false));
                 }
                 else{
                     exact_product = mixtures[0];
@@ -244,7 +246,7 @@ void FactorGraph::buildMsgFromFactorToVar(int _idx_factor, string _type, mutex& 
                     for(auto& g : gs_source){
                         if(!g.isNull){
                                 {
-                                    lock_guard<mutex> lock_guard(m);
+                                    //lock_guard<mutex> lock_guard(m);
                                     vector<double> mean_source = {g.mean[0], g.mean[1], g.mean[2]};
                                     Eigen::Matrix3d T = (v2t((g.mean)))*(v2t(z.mean));
                                     vector<double> mean = t2v(T);
@@ -301,7 +303,7 @@ void FactorGraph::propagateMsg(int _idx_factor, mutex& m){
 
     else{
         {
-            //lock_guard<mutex> lock_guard(m);
+            lock_guard<mutex> lock_guard(m);
             this->buildMsgFromVarToFactor(_idx_factor, "from", m);
             this->buildMsgFromFactorToVar(_idx_factor, "to", m);
             this->buildMsgFromVarToFactor(_idx_factor, "to", m);
@@ -313,15 +315,16 @@ void FactorGraph::propagateMsg(int _idx_factor, mutex& m){
 void FactorGraph::updateVar(int _idx_var){
     
     vector<vector<Gaussian>> mixtures(this->vars[_idx_var]->neighbor_edges.size());
-
+    vector<string> types(this->vars[_idx_var]->neighbor_edges.size());
     int nb_neighbor_edges = this->vars[_idx_var]->neighbor_edges.size();
 
     for(int i=0; i<nb_neighbor_edges; i++){
 
         mixtures[i] = this->vars[_idx_var]->neighbor_edges[i]->msg_factor_to_var->gs;
+        types[i] = this->vars[_idx_var]->neighbor_edges[i]->msg_factor_to_var->factor->type;
     }
 
-    vector<Gaussian> products = exactSampling(mixtures, this->dim, false);
+    vector<Gaussian> products = exactSampling(mixtures, this->dim, false, types, false);
     vector<double> ws(products.size());
 
     for(int i=0; i<products.size(); i++){
@@ -581,8 +584,8 @@ void FactorGraph::propagateMsgAll(bool JT, mutex& m){
         iota(order.begin(), order.end(), 0);
         shuffle(order.begin(), order.end(), randeng);
 
-        omp_set_num_threads(20);
-        #pragma omp parallel for
+        // omp_set_num_threads(20);
+        // #pragma omp parallel for
         for(int i=0; i<nb_factors; i++){
             //cout<<i<<endl;
             this->propagateMsg(order[i], m);           

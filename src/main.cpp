@@ -8,7 +8,7 @@
 #pragma warning( disable : 4100 )
 
 vector<double> prior_cov = {0.0001, 0.0001, 0.0001};
-vector<double> meas_cov = {0.05, 0.05, 0.01};
+vector<double> meas_cov = {0.01, 0.01, 0.002};
 vector<double> odom_cov = {0.05, 0.05, 0.01};
 
 int dim = 3;
@@ -20,13 +20,15 @@ mutex m;
 
 int nb_var = 3500;
 
+int s = 0;
+
 
 int main(int argc, char** argv){
     
 
     string seq = "M3500";
     // read data
-    string path = "../data/"+seq+"/data_1.csv";
+    string path = "../data/"+seq+"/data_"+to_string(s)+".csv";
     //string path = "../data/"+seq+"/slam.csv";
 
     vector<vector<int>> idxs_v;
@@ -35,6 +37,7 @@ int main(int argc, char** argv){
     string path_gt = "../data/"+seq+"/gt2.csv";
     //string path_gt = "../data/"+seq+"/gt.csv";
     vector<vector<double>> gt;
+
 
     readCSV_MH_GT(path_gt, gt, nb_var-1);
     
@@ -100,42 +103,49 @@ int main(int argc, char** argv){
             graph.addFactor(graph.factors.size(), z, "between", idx_from, idx_to, m);
         }
         else{
+
+
             vector<Gaussian> z;
             vector<double> pose_from = graph.vars[idx_from]->mean;
             vector<double> pose_to = graph.vars[idx_to]->mean;
 
-            vector<double> _cov = odom_cov;
+            vector<double> _cov = meas_cov;
 
             Eigen::Matrix3d T_NULL = (v2t(pose_from).inverse()*v2t(pose_to));
             vector<double> o_NULL = move(t2v(T_NULL));
 
-            if(o.size() == 2){
-                //z = {Gaussian(dim, 1/3, o[0], _cov), Gaussian(dim, 1/3, o[1], _cov), Gaussian(dim, 1/3, o_NULL, _cov)}; // z + null loop
-                z = {Gaussian(dim, 1/3, o[0], _cov), Gaussian(dim, 1/3, o[1], _cov), Gaussian(true)}; // z + null loop
 
+
+            if(o.size() == 2){
+                z = {Gaussian(dim, 1/2, o[0], _cov), Gaussian(dim, 1/2, o[1], _cov)}; 
+                // Gaussian(dim, 1/3, o_NULL, _cov)}; // z + null loop
+                // z = {Gaussian(dim, 1/2, o[0], _cov), Gaussian(dim, 1/2, o[1], _cov)}; // z + null loop
             }
             else{
-                z = {Gaussian(dim, 1/2, o[0], _cov), Gaussian(true)}; // z + null loop
+                z = {Gaussian(dim, 1, o[0], _cov)};//, Gaussian(dim, 1/2, o_NULL, _cov)}; // z + null loop
             }
+
 
 
             graph.addFactor(graph.factors.size(), z, "loop", idx_from, idx_to, m);
-          
             
             if(to_ref != idx_to){
                 to_ref = idx_to;
                 std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 
-                // graph.getUpdateOrdetJT();
+                //graph.getUpdateOrdetJT();
                 // omp_set_num_threads(5);
                 // #pragma omp parallel for
-                for(int iter=0; iter < 1; iter++){
+                for(int iter=0; iter < 3; iter++){
                     graph.propagateMsgAll(false, m);
+
                 }
-                std::chrono::duration<double> sec = std::chrono::system_clock::now() - start;
+
+                    graph.updatePoseAll();
+                
                 //duration = (double)(finish - start)/CLOCKS_PER_SEC;
 
-                graph.updatePoseAll();
+                std::chrono::duration<double> sec = std::chrono::system_clock::now() - start;
                 double _e = graph.getError(gt);
                 cout<<idx_to<<" Update : time = "<<sec.count()<<" err = "<<_e<<" delta = "<<graph.mean_delta/graph.vars.size()<<endl;
                 graph.mean_delta = 0.0;
@@ -145,18 +155,20 @@ int main(int argc, char** argv){
 
         }
     }
-    
-    // for(int i=0; i<500; i++){
+
+    // //graph.getUpdateOrdetJT();
+    // for(int i=0; i<1000; i++){
+    //     //cout<<"On board"<<endl;
     //     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 
-    //     for(int iter=0; iter < 5; iter++){
+    //     for(int iter=0; iter < 1; iter++){
     //         graph.propagateMsgAll(false, m);
     //     }
     //     std::chrono::duration<double> sec = std::chrono::system_clock::now() - start;
 
     //     graph.updatePoseAll();
     //     double _e = graph.getError(gt);
-    //     cout<<3500<<" Update : time = "<<sec.count()<<" err = "<<_e<<endl;
+    //     cout<<i<<" Update : time = "<<sec.count()<<" err = "<<_e<<endl;
     //     vector<double> temp_result = {(double)i, sec.count(), _e};
 
     // }
@@ -183,7 +195,8 @@ int main(int argc, char** argv){
     std::ofstream outFile("../result/"+seq+"/result.txt");
     for (const auto &e : result) outFile << to_string((int)e[0]) <<" "<<to_string(e[1])<<" "<<to_string(e[2]) << "\n";
 
-    std::ofstream outFile2("../result/"+seq+"/pose.txt");
+    cout<<"../result/"+seq+"/pose"+to_string(s)+".txt"<<endl;
+    std::ofstream outFile2("../result/"+seq+"/pose"+to_string(s)+".txt");
     for (int i=0; i<graph.vars.size(); i++) {
         vector<double> pose = graph.getVarPose(i);
         outFile2 << to_string(pose[0]) <<" "<<to_string(pose[1])<<" "<<to_string(pose[2]) << "\n";
