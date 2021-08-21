@@ -1,1 +1,1 @@
-\title{Multi-modal belief propagation for robust SLAM}
+# Multi-modal belief propagation for robust SLAM
