@@ -11,8 +11,8 @@ cmake ..
 make install
 
 ### dlib
-git clone https://github.com/davisking/dlib
-cd dlib
+git clone https://github.com/davisking/dlib \
+cd dlib \
 mkdir build && cd build
 cmake ..
 make install
