@@ -8,11 +8,11 @@ git clone https://github.com/igraph/igraph \
 cd igraph \
 mkdir build && cd build \
 cmake .. \
-make install \
+make install
 
 ### dlib
 git clone https://github.com/davisking/dlib \
 cd dlib \
 mkdir build && cd build \
 cmake .. \
-make install \
+make install
