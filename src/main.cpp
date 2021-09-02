@@ -171,3 +171,4 @@ int main(int argc, char** argv){
         vector<double> pose = poses[i];
         outFile2 << to_string(pose[0]) <<" "<<to_string(pose[1])<<" "<<to_string(pose[2]) << "\n";
     }
+}
