@@ -24,15 +24,15 @@ public:
     int nb_between_edge = 0;
 
     int dim;
-    vector<shared_ptr<Variable>> vars;
-    vector<shared_ptr<Factor>> factors;
-    vector<shared_ptr<Edge>> edges;
+    std::vector<std::shared_ptr<Variable>> vars;
+    std::vector<std::shared_ptr<Factor>> factors;
+    std::vector<std::shared_ptr<Edge>> edges;
 
-    vector<vector<int>> jt_order; // update order of factors
+    std::vector<int> jt_order; // update order of factors
 
-    void addVariable(int _idx, vector<double>& initial, vector<double>& _cov);
+    void addVariable(int _idx, std::vector<double>& initial, std::vector<double>& _cov);
 
-    void addFactor(int _idx, const vector<Gaussian>& _zs, 
+    void addFactor(int _idx, const std::vector<Gaussian>& _zs, 
                    const string _type, 
                    const int _idx_from_var, 
                    const int _idx_to_var, mutex& m);
@@ -43,28 +43,27 @@ public:
     void propagateMsg(int _idx_factor, mutex& m);
     void updateVar(int _idx_var);
 
-    void getUpdateOrdetJT();
+    void getUpdateOrdetJT(std::mutex& m);
 
     void propagateMsgAll(bool JT, mutex& m);
     void updatePoseAll();
 
     // functions for debug
-    vector<string> var_keys;
-    vector<string> factor_keys;
-    vector<string> edge_keys;
+    std::vector<string> var_keys;
+    std::vector<string> factor_keys;
+    std::vector<string> edge_keys;
 
     double mean_delta = 0.0;
 
-    vector<double> getVarPose(int _idx){
+    std::vector<double> getVarPose(int _idx){
         return this->vars[_idx]->mean;
     }
 
-    double getError(vector<vector<double>>& gt){
+    double getError(std::vector<std::vector<double>>& gt){
 
         int nb_v = this->vars.size();
 
         double error = 0.0;
-
         for(int i=0; i<nb_v; i++){
             double err = error_per(this->vars[i]->mean, gt[i]);
             error += err;

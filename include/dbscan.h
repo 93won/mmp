@@ -26,7 +26,7 @@ public:
         this->z = _z;
     }
 
-    Point(vector<double>& pts){
+    Point(std::vector<double>& pts){
         this->clusterID = -1;
         this->x = pts[0];
         this->y = pts[1];
@@ -37,7 +37,7 @@ public:
 
 class DBSCAN {
 public:    
-    DBSCAN(unsigned int minPts, double eps, vector<Point> points){
+    DBSCAN(unsigned int minPts, double eps, std::vector<Point> points){
         m_minPoints = minPts;
         m_epsilon = eps;
         m_points = points;
@@ -46,7 +46,7 @@ public:
     ~DBSCAN(){}
 
     int run();
-    vector<int> calculateCluster(Point point);
+    std::vector<int> calculateCluster(Point point);
     int expandCluster(Point point, int clusterID);
     inline double calculateDistance(Point& pointCore, Point& pointTarget);
 
@@ -55,7 +55,7 @@ public:
     int getEpsilonSize() {return m_epsilon;}
     
 public:
-    vector<Point> m_points;
+    std::vector<Point> m_points;
     
 private:    
     unsigned int m_pointSize;

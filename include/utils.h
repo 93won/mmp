@@ -26,6 +26,8 @@
 using namespace std;
 
 
+
+
 //auto rng2 = default_random_engine {};
 
 class Gaussian{
@@ -36,7 +38,7 @@ public:
         this->isNull = true;
     };
 
-    Gaussian(int _dim, double _weight, vector<double>& _mean, vector<double>& _cov){
+    Gaussian(int _dim, double _weight, std::vector<double>& _mean, std::vector<double>& _cov){
         this->dim = _dim;
         this->weight = _weight;
         this->mean = _mean;
@@ -58,49 +60,49 @@ public:
     }
 
     int dim;
-    vector<double> mean;
-    vector<double> cov;
+    std::vector<double> mean;
+    std::vector<double> cov;
     double weight;
     bool isNull = false;
 };
 
 
 
-const Eigen::Matrix3d v2t(vector<double>& vec);
-const vector<double> t2v(const Eigen::Ref<Eigen::Matrix3d>& mtx);
+const Eigen::Matrix3d v2t(std::vector<double>& vec);
+const std::vector<double> t2v(const Eigen::Ref<Eigen::Matrix3d>& mtx);
 
 // multiplication of two multinominal Gaussian distribution (assume diagonal covariance) 
 Gaussian multGaussians(const Gaussian& g1, const Gaussian& g2);
 
 // calculate pdf of multivariate normal distribution
-double calcNormalPDF(vector<double> x, vector<double> mean, vector<double> cov, int dim);
+double calcNormalPDF(std::vector<double> x, std::vector<double> mean, std::vector<double> cov, int dim);
 
 void showMatrix(Eigen::Matrix3d _T);
 
-vector<vector<int>> cartProduct(const vector<vector<int>>& v);
+std::vector<std::vector<int>> cartProduct(const std::vector<std::vector<int>>& v);
 
-vector<Gaussian> exactSampling(vector<vector<Gaussian>>& mixtures, int dim, bool reparam, vector<string>& types, bool showMode);
+std::vector<Gaussian> exactSampling(std::vector<std::vector<Gaussian>>& mixtures, int dim, bool reparam, std::vector<string>& types, bool showMode);
 
-vector<int> intersection(vector<int> &v1, vector<int> &v2);
+void intersection(std::vector<int> &v1, std::vector<int> &v2, std::vector<int> &v3);
 
-void copy_vector(igraph_vector_t *v, vector<int>& vec);
+void copy_vector(igraph_vector_t *v, std::vector<int>& vec);
 
 void print_vector(igraph_vector_t *v, FILE *f);
 
-void print_std_vector(vector<int>& vec);
+void print_std_vector(std::vector<int>& vec);
 
-void readCSV(string path, vector<vector<int>>& _idx_v, vector<vector<double>>& _odom);
+void readCSV(string path, std::vector<std::vector<int>>& _idx_v, std::vector<std::vector<double>>& _odom);
 
-double error_per(vector<double>& est, vector<double>& gt);
+double error_per(std::vector<double>& est, std::vector<double>& gt);
 
-void getMode(vector<vector<double>>& means, vector<vector<double>>& covs, vector<double>& ws, int max_iter, int dim, int nb_bin);
+void getMode(std::vector<std::vector<double>>& means, std::vector<std::vector<double>>& covs, std::vector<double>& ws, int max_iter, int dim, int nb_bin);
 
-void vec2pts(vector<vector<double>>& pts_in, vector<Point>& pts_out);
+void vec2pts(std::vector<std::vector<double>>& pts_in, std::vector<Point>& pts_out);
 
-vector<double> calcDist(const vector<double>& p1, const vector<double>& p2);
+std::vector<double> calcDist(const std::vector<double>& p1, const std::vector<double>& p2);
 
-void readCSV_MH(string path, vector<vector<int>>& _idx_v, vector<vector<vector<double>>>& _odom, int last_idx);
+void readCSV_MH(string path, std::vector<std::vector<int>>& _idx_v, std::vector<std::vector<std::vector<double>>>& _odom, int last_idx);
 
-void readCSV_MH_GT(string path, vector<vector<double>>& _odom, int last_idx);
+void readCSV_MH_GT(string path, std::vector<std::vector<double>>& _odom, int last_idx);
 
 #endif

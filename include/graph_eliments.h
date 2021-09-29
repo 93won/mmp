@@ -15,7 +15,7 @@ class Variable{
 
 public:
 
-    Variable(const int _idx, const string _key, const vector<double> _mean, vector<double> _cov){
+    Variable(const int _idx, const string _key, const std::vector<double> _mean, std::vector<double> _cov){
         this->idx = _idx;
         this->key = _key;
         this->mean = _mean;
@@ -26,19 +26,19 @@ public:
     
     int idx;
     string key;
-    vector<double> mean;
-    vector<double> cov;
-    vector<shared_ptr<Factor>> neighbor_factors; // neighbor factors
-    vector<shared_ptr<Edge>> neighbor_edges;
+    std::vector<double> mean;
+    std::vector<double> cov;
+    std::vector<std::shared_ptr<Factor>> neighbor_factors; // neighbor factors
+    std::vector<std::shared_ptr<Edge>> neighbor_edges;
     
-    void addNeighbor(const shared_ptr<Edge>& edge, const shared_ptr<Factor>& factor){
+    void addNeighbor(const std::shared_ptr<Edge>& edge, const std::shared_ptr<Factor>& factor){
         this->neighbor_edges.push_back(edge);
         this->neighbor_factors.push_back(factor);   
     }
 
     void update(const Gaussian &g){
 
-        vector<double> delta = calcDist(this->mean, g.mean);
+        std::vector<double> delta = calcDist(this->mean, g.mean);
 
         double trans = sqrt(pow(delta[0], 2) + pow(delta[1], 2));
         double rot = delta[2];
@@ -53,7 +53,7 @@ public:
 class Factor{
 public:
     
-    Factor(const int _idx, const string _key, const vector<Gaussian> _zs, const string _type){
+    Factor(const int _idx, const string _key, const std::vector<Gaussian> _zs, const string _type){
         this->idx = _idx;
         this->key = _key;
         this->zs = _zs;
@@ -64,17 +64,17 @@ public:
 
     int idx;
     string key;
-    vector<Gaussian> zs; // measurements
+    std::vector<Gaussian> zs; // measurements
     string type; // prior or between or loop
 
-    shared_ptr<Edge> from_edge; // from edge
-    shared_ptr<Edge> to_edge; // to edge
+    std::shared_ptr<Edge> from_edge; // from edge
+    std::shared_ptr<Edge> to_edge; // to edge
 
-    shared_ptr<Variable> from_var; // from var
-    shared_ptr<Variable> to_var; // to var
+    std::shared_ptr<Variable> from_var; // from var
+    std::shared_ptr<Variable> to_var; // to var
 
-    void setEdge(const shared_ptr<Variable>& _var,
-                 const shared_ptr<Edge>& _edge, string _type){
+    void setEdge(const std::shared_ptr<Variable>& _var,
+                 const std::shared_ptr<Edge>& _edge, string _type){
         
         bool isFromSet(_type == "from");
 
@@ -93,8 +93,8 @@ class Edge{
 public:
 
     Edge(const int _idx_edge, const string _key_edge,
-         const shared_ptr<Variable>& _var,
-         const shared_ptr<Factor>& _factor, string _type){
+         const std::shared_ptr<Variable>& _var,
+         const std::shared_ptr<Factor>& _factor, string _type){
 
         this->idx = _idx_edge;
         this->key = _key_edge;
@@ -109,6 +109,11 @@ public:
 
     Edge(){};
 
+    void showEdgeInfo(){
+        cout<<"Edge "<<this->key<<endl;
+        cout<<this->var->key <<" "<<this->factor->key<<endl;
+    }
+
     // (var) -- (edge) -- (factor)
 
     bool valid = false;
@@ -118,10 +123,10 @@ public:
     string type;
 
 
-    shared_ptr<Variable> var; // variable of edge
-    shared_ptr<Factor> factor; // factor of edge
-    shared_ptr<Message> msg_var_to_factor; // message from variable to factor
-    shared_ptr<Message> msg_factor_to_var; // message from factor to variable
+    std::shared_ptr<Variable> var; // variable of edge
+    std::shared_ptr<Factor> factor; // factor of edge
+    std::shared_ptr<Message> msg_var_to_factor; // message from variable to factor
+    std::shared_ptr<Message> msg_factor_to_var; // message from factor to variable
 
 };
 
@@ -130,8 +135,8 @@ class Message{
 
 public:
     Message(const string _type,
-            const shared_ptr<Variable>& _var,
-            const shared_ptr<Factor>& _factor){
+            const std::shared_ptr<Variable>& _var,
+            const std::shared_ptr<Factor>& _factor){
         this->type = _type;
         this->var = _var;
         this->factor = _factor;
@@ -140,17 +145,17 @@ public:
 
     Message(){};
 
-    void setGaussians(vector<Gaussian>& _gs){
+    void setGaussians(std::vector<Gaussian>& _gs){
         this->gs = _gs;
     }
 
     bool valid = false;
 
-    shared_ptr<Variable> var;
-    shared_ptr<Factor> factor;
+    std::shared_ptr<Variable> var;
+    std::shared_ptr<Factor> factor;
 
-    vector<Gaussian> gs; // obejct -> move
-    vector<double> ws;
+    std::vector<Gaussian> gs; // obejct -> move
+    std::vector<double> ws;
     string type;
 
     void showInfo(){
