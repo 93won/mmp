@@ -19,12 +19,14 @@ make install
 
 ## Example - Manhattan city 3500 (M-3500) data
 
+### build
 git clone https://github.com/93won/mmp \
 cd nmp \
 mkdir build && cd build \
 cmake .. \
 make\
-./m3500 \
+./m3500
 
+### Result
 ### iSAM2(red) / MH-iSAM2(blue) / Ours(green) / GT(gray)
 ![result](https://user-images.githubusercontent.com/38591115/135188587-edba7d30-c0b8-4f1d-bc77-d9005781f1bf.jpg)
