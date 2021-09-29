@@ -162,14 +162,14 @@ int main(int argc, char** argv){
 
         }
 
-        if(idx_to != idx_to_ref){
+        /*if(idx_to != idx_to_ref){
             idx_to_ref = idx_to;
             std::ofstream outFile_("../result_for_plot/"+to_string(idx_to)+".txt");
             for (int k=0; k<graph.vars.size(); k++) {
                 std::vector<double> pose = graph.getVarPose(k);
                 outFile_ << to_string(pose[0]) <<" "<<to_string(pose[1])<<" "<<to_string(pose[2]) << "\n";
             }
-        }
+        }*/
     }
 
     /*std::ofstream outFile("../result/"+seq+"/result"+to_string(s)+".txt");
