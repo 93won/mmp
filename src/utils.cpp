@@ -1,7 +1,7 @@
 #include "utils.h"
 
 
-const Eigen::Matrix3d v2t(vector<double>& vec){
+const Eigen::Matrix3d v2t(std::vector<double>& vec){
 
     double pi = M_PI;
     double x = vec[0];
@@ -21,7 +21,7 @@ const Eigen::Matrix3d v2t(vector<double>& vec){
     return T; 
 }
 
-const vector<double> t2v(const Eigen::Ref<Eigen::Matrix3d>& mtx){
+const std::vector<double> t2v(const Eigen::Ref<Eigen::Matrix3d>& mtx){
 
     double pi = M_PI;
     double x = mtx(0,2);
@@ -35,7 +35,7 @@ const vector<double> t2v(const Eigen::Ref<Eigen::Matrix3d>& mtx){
         heading -= pi*2;
     }
 
-    vector<double> vec = {x, y, heading};
+    std::vector<double> vec = {x, y, heading};
 
     return vec;    
 }
@@ -65,16 +65,16 @@ Gaussian multGaussians(const Gaussian& g1, const Gaussian& g2){
         double pi = M_PI;
 
         // multiplication of two multivariate Gaussian - diagonal case
-        vector<double> inv_cov1 = {1.0/g1.cov[0], 1.0/g1.cov[1], 1.0/g1.cov[2]};
-        vector<double> inv_cov2 = {1.0/g2.cov[0], 1.0/g2.cov[1], 1.0/g2.cov[2]};
+        std::vector<double> inv_cov1 = {1.0/g1.cov[0], 1.0/g1.cov[1], 1.0/g1.cov[2]};
+        std::vector<double> inv_cov2 = {1.0/g2.cov[0], 1.0/g2.cov[1], 1.0/g2.cov[2]};
 
         // covariance of result Gaussian (diagonal only)
-        vector<double> cov = {(g1.cov[0]*g2.cov[0])/(g1.cov[0]+g2.cov[0]),
+        std::vector<double> cov = {(g1.cov[0]*g2.cov[0])/(g1.cov[0]+g2.cov[0]),
                                    (g1.cov[1]*g2.cov[1])/(g1.cov[1]+g2.cov[1]),
                                    (g1.cov[2]*g2.cov[2])/(g1.cov[2]+g2.cov[2])};
 
-        vector<double> mean1 = {g1.mean[0], g1.mean[1], g1.mean[2]};
-        vector<double> mean2 = {g2.mean[0], g2.mean[1], g2.mean[2]};
+        std::vector<double> mean1 = {g1.mean[0], g1.mean[1], g1.mean[2]};
+        std::vector<double> mean2 = {g2.mean[0], g2.mean[1], g2.mean[2]};
 
         // angle correction
         if(mean1[2] < pi/2 && mean2[2] > 3.0/2.0*pi){
@@ -85,7 +85,7 @@ Gaussian multGaussians(const Gaussian& g1, const Gaussian& g2){
             mean1[2] -= pi*2;
         }
 
-        vector<double> mean = {cov[0]*inv_cov1[0]*mean1[0] + cov[0]*inv_cov2[0]*mean2[0],
+        std::vector<double> mean = {cov[0]*inv_cov1[0]*mean1[0] + cov[0]*inv_cov2[0]*mean2[0],
                                     cov[1]*inv_cov1[1]*mean1[1] + cov[1]*inv_cov2[1]*mean2[1],
                                     cov[2]*inv_cov1[2]*mean1[2] + cov[2]*inv_cov2[2]*mean2[2]};
 
@@ -107,7 +107,7 @@ Gaussian multGaussians(const Gaussian& g1, const Gaussian& g2){
 
 }
 
-double calcNormalPDF(vector<double> x, vector<double> mean, vector<double> cov, int dim){
+double calcNormalPDF(std::vector<double> x, std::vector<double> mean, std::vector<double> cov, int dim){
     
     double pi = M_PI;
     
@@ -168,10 +168,10 @@ void showMatrix(Eigen::Matrix3d _T){
     cout<<_T(2, 0)<<" "<<_T(2, 1)<<" "<<_T(2, 2)<<endl;
 }
 
-vector<vector<int>> cartProduct (const vector<vector<int>>& v) {
-    vector<vector<int>> s = {{}};
+std::vector<std::vector<int>> cartProduct (const std::vector<std::vector<int>>& v) {
+    std::vector<std::vector<int>> s = {{}};
     for (auto& u : v) {
-        vector<vector<int>> r;
+        std::vector<std::vector<int>> r;
         for (auto& x : s) {
             for (auto y : u) {
                 r.push_back(x);
@@ -184,31 +184,26 @@ vector<vector<int>> cartProduct (const vector<vector<int>>& v) {
 }
 
 
-vector<Gaussian> exactSampling(vector<vector<Gaussian>>& mixtures, int dim, bool reparam, vector<string>& types, bool showMode){
-    
+std::vector<Gaussian> exactSampling(std::vector<std::vector<Gaussian>>& mixtures, int dim, bool reparam, std::vector<string>& types, bool showMode){
+    //showMode = true;
     // make combinations - start
+    
     if(mixtures.size()==1){
         return mixtures[0];
     }
 
-    // for(int i=0; i<mixtures.size(); i++){
-    //     if(types[i]=="loop"){
-    //         //cout<<mixtures.size()<<" "<<i<<" : loop"<<endl;
-    //         mixtures[i].emplace_back(Gaussian(true));
-    //     }
-    // }
 
-    vector<vector<int>> sizes(mixtures.size());
+    std::vector<std::vector<int>> sizes(mixtures.size());
 
     for(int i=0; i<mixtures.size(); i++){
-        vector<int> size_temp(mixtures[i].size());
+        std::vector<int> size_temp(mixtures[i].size());
         for(int j=0; j<mixtures[i].size(); j++){
             size_temp[j] = j;
         }
         sizes[i] = move(size_temp);
     }
 
-    vector<vector<int>> combs = cartProduct(sizes);
+    std::vector<std::vector<int>> combs = cartProduct(sizes);
 
     // define parameters 
 
@@ -216,9 +211,9 @@ vector<Gaussian> exactSampling(vector<vector<Gaussian>>& mixtures, int dim, bool
 
     int cnt = 0;
 
-    vector<vector<double>> means(combs.size(), vector<double>(3));
-    vector<vector<double>> covs(combs.size(), vector<double>(3));
-    vector<double> ws(combs.size());
+    std::vector<std::vector<double>> means(combs.size(), std::vector<double>(3));
+    std::vector<std::vector<double>> covs(combs.size(), std::vector<double>(3));
+    std::vector<double> ws(combs.size());
 
     //cout<<"possible combinations : "<<combs.size()<<endl;
     Gaussian g_mul = Gaussian(true);
@@ -226,59 +221,55 @@ vector<Gaussian> exactSampling(vector<vector<Gaussian>>& mixtures, int dim, bool
     if(showMode)
     cout<<"########################################################################"<<endl;
     
-    // omp_set_num_threads(20);
-    // #pragma omp parallel for
-    
     for(int c=0; c<combs.size(); c++){
+        g_mul_no_loop = Gaussian(true);
         //Gaussian g_mul = move(multGaussians(mixtures[0][combs[c][0]], mixtures[1][combs[c][1]]));
-
         for(int i=0; i<mixtures.size(); i++){
             g_mul = (multGaussians(g_mul, mixtures[i][combs[c][i]]));
         }
-
         for(int i=0; i<mixtures.size(); i++){
-            if(types[i]!="loop")
+            if(types[i]!="loop"){
                 g_mul_no_loop = (multGaussians(g_mul_no_loop, mixtures[i][combs[c][i]]));
+            }
         }
-
         //g_mul.showInfo();
         double denominator = calcNormalPDF(g_mul.mean, g_mul.mean, g_mul.cov, dim)+1e-100;
         double numerator = 1.0;
 
-        vector<vector<int>> idxs;
-
-
+        std::vector<std::vector<int>> idxs;
         // loop closure filtering
+
+        int loop = 0;
+
         if(showMode)
         cout<<"------------------------------------------------------------------------"<<endl;
+
         for(int i=0; i<mixtures.size(); i++){
-            //if(types[i] == "loop")
-            //    cout<<"type : "<<types[i]<<" prob : "<<prob<<endl;
-            if(types[i] == "loop")
-            {
-                double prob = calcNormalPDF(mixtures[i][combs[c][i]].mean, g_mul_no_loop.mean, g_mul_no_loop.cov, dim);
-                if(showMode){
-                cout<<i<<" loop : "<<mixtures[i][combs[c][i]].mean[0]<<" "<<mixtures[i][combs[c][i]].mean[1]<<" "<<mixtures[i][combs[c][i]].mean[2]<<endl;
-                cout<<i<<" betweens : "<<g_mul_no_loop.mean[0]<<" "<<g_mul_no_loop.mean[1]<<" "<<g_mul_no_loop.mean[2]<<endl;
-                cout<<i<<" probability : "<<prob<<endl;
+            if(!g_mul_no_loop.isNull){
+                if(types[i] == "loop"){
+                    double prob = calcNormalPDF(mixtures[i][combs[c][i]].mean, g_mul_no_loop.mean, g_mul_no_loop.cov, dim);
+                    if(showMode){
+                    cout<<i<<" loop : "<<mixtures[i][combs[c][i]].mean[0]<<" "<<mixtures[i][combs[c][i]].mean[1]<<" "<<mixtures[i][combs[c][i]].mean[2]<<endl;
+                    cout<<i<<" betweens : "<<g_mul_no_loop.mean[0]<<" "<<g_mul_no_loop.mean[1]<<" "<<g_mul_no_loop.mean[2]<<endl;
+                    cout<<i<<" probability : "<<prob<<endl;
+                    }
+                    if(prob > 1e-1){
+                        std::vector<int> _idxs = {i, combs[c][i]};
+                        idxs.push_back(_idxs);
+                        loop += 1;
+                    }
                 }
-                if(prob > 1e-3){
-                    vector<int> _idxs = {i, combs[c][i]};
+                else{
+                    std::vector<int> _idxs = {i, combs[c][i]};
                     idxs.push_back(_idxs);
                 }
-                //cout<<"type : "<<types[i]<<" prob : "<<prob<<endl;
-            }
-
+            }                
+        
             else{
-                vector<int> _idxs = {i, combs[c][i]};
+                std::vector<int> _idxs = {i, combs[c][i]};
                 idxs.push_back(_idxs);
+                loop += 1;
             }
-
-            //if(!mixtures[i][combs[c][i]].isNull)
-            //    numerator *= (calcNormalPDF(g_mul.mean, mixtures[i][combs[c][i]].mean, mixtures[i][combs[c][i]].cov, dim) + 1e-7);
-            //else{
-            //    numerator *= 1e-7;
-            //}
         }
 
         g_mul = Gaussian(true);
@@ -286,7 +277,10 @@ vector<Gaussian> exactSampling(vector<vector<Gaussian>>& mixtures, int dim, bool
             //cout<<g_mul.isNull<< " " <<mixtures[idxs[i][0]][idxs[i][1]].isNull<<endl;
             g_mul = multGaussians(g_mul, mixtures[idxs[i][0]][idxs[i][1]]);
             if(showMode)
-            cout<<"multiplied Gs : "<<mixtures[idxs[i][0]][idxs[i][1]].mean[0]<<" "<<mixtures[idxs[i][0]][idxs[i][1]].mean[1]<<" "<<mixtures[idxs[i][0]][idxs[i][1]].mean[2]<<endl;
+            //cout<<"multiplied Gs : "<<mixtures[idxs[i][0]][idxs[i][1]].mean[0]<<" "<<mixtures[idxs[i][0]][idxs[i][1]].mean[1]<<" "<<mixtures[idxs[i][0]][idxs[i][1]].mean[2]<<endl;
+            cout<<loop<<" multiplied Gs : "<<mixtures[idxs[i][0]][idxs[i][1]].mean[0]<<"  "<<mixtures[idxs[i][0]][idxs[i][1]].cov[0]<<endl;
+            
+            
             //cout<<g_mul.isNull<< " " <<mixtures[idxs[i][0]][idxs[i][1]].isNull<<endl;
         }
 
@@ -294,6 +288,7 @@ vector<Gaussian> exactSampling(vector<vector<Gaussian>>& mixtures, int dim, bool
         cout<<"mul result : "<<g_mul.mean[0]<<" "<<g_mul.mean[1]<<" "<<g_mul.mean[2]<<endl;
 
         denominator = calcNormalPDF(g_mul.mean, g_mul.mean, g_mul.cov, dim)+1e-12;
+
         numerator = 1.0;
 
         double numer_sum = 0.0;
@@ -303,10 +298,12 @@ vector<Gaussian> exactSampling(vector<vector<Gaussian>>& mixtures, int dim, bool
         }
 
 
-        if(g_mul.mean[0] == g_mul_no_loop.mean[0] && g_mul.mean[1] == g_mul_no_loop.mean[1] && g_mul.mean[2] == g_mul_no_loop.mean[2]){
-            if(showMode)
-            cout<<"No loop included..!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
-            numerator *= 1e-5;
+        if(!g_mul_no_loop.isNull){
+            if(g_mul.mean[0] == g_mul_no_loop.mean[0] && g_mul.mean[1] == g_mul_no_loop.mean[1] && g_mul.mean[2] == g_mul_no_loop.mean[2]){
+                if(showMode)
+                cout<<"No loop included..!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
+                numerator *= 1e-2;
+            }
         }
 
         if(showMode){
@@ -331,6 +328,9 @@ vector<Gaussian> exactSampling(vector<vector<Gaussian>>& mixtures, int dim, bool
         cnt += 1;
     }
 
+
+
+
     double w_sum2 = accumulate(ws.begin(), ws.end(), 0.0);
 
     for(auto& w : ws){
@@ -339,12 +339,12 @@ vector<Gaussian> exactSampling(vector<vector<Gaussian>>& mixtures, int dim, bool
 
     // double w_max = *max_element(ws.begin(), ws.end());
     
-    // vector<vector<double>> means_new;
-    // vector<vector<double>> covs_new;
-    // vector<double> ws_new;
+    // std::vector<std::vector<double>> means_new;
+    // std::vector<std::vector<double>> covs_new;
+    // std::vector<double> ws_new;
 
     // for(int k=0; k<means.size(); k++){
-    //     if(ws[k] >= w_max*0.5){
+    //     if(ws[k] >= w_max*0.1){
     //         means_new.push_back(means[k]);
     //         covs_new.push_back(covs[k]);
     //         ws_new.push_back(ws[k]);
@@ -364,7 +364,6 @@ vector<Gaussian> exactSampling(vector<vector<Gaussian>>& mixtures, int dim, bool
 
     
 
-
     if(reparam){
         if(showMode)
         cout<<"Before : "<<means.size()<<endl;
@@ -382,27 +381,29 @@ vector<Gaussian> exactSampling(vector<vector<Gaussian>>& mixtures, int dim, bool
     }
 
 
-    vector<vector<double>> mn = {means[0]};
-    vector<vector<double>> cn = {covs[0]};
-    vector<double> wn = {ws[0]};
+    std::vector<std::vector<double>> mn = {means[0]};
+    std::vector<std::vector<double>> cn = {covs[0]};
+    std::vector<double> wn = {ws[0]};
     //////////////////////////////////////////////////////////////// EM here
 
-    // vector<Gaussian> mixture_result(ws.size());
+    // std::vector<Gaussian> mixture_result(ws.size());
 
     // for(int i=0; i<ws.size(); i++){
     //     mixture_result[i] = (Gaussian(dim, ws[i], means[i], covs[i]));
     // }
 
-    vector<Gaussian> mixture_result(wn.size());
+    std::vector<Gaussian> mixture_result(wn.size());
 
     for(int i=0; i<wn.size(); i++){
         mixture_result[i] = (Gaussian(dim, wn[i], mn[i], cn[i]));
     }
 
+
+
     return mixture_result;
 }
 
-void normalizeVector(vector<double>& vec){
+void normalizeVector(std::vector<double>& vec){
 
     double sum = accumulate(vec.begin(), vec.end(), 0.0);
 
@@ -411,7 +412,7 @@ void normalizeVector(vector<double>& vec){
     }
 }
 
-void printResults(vector<Point>& points, int num_points)
+void printResults(std::vector<Point>& points, int num_points)
 {
     int i = 0;
     printf("Number of points: %u\n"
@@ -428,17 +429,18 @@ void printResults(vector<Point>& points, int num_points)
     }
 }
 
-void getClass(vector<Point>& pts, vector<int>& _class){
+void getClass(std::vector<Point>& pts, std::vector<int>& _class){
     for(int i=0; i<pts.size(); i++){
         _class[i] = pts[i].clusterID;
     }
 }
 
 
-void getMode(vector<vector<double>>& means, vector<vector<double>>& covs, vector<double>& ws, int max_iter, int dim, int nb_bin){
+void getMode(std::vector<std::vector<double>>& means, std::vector<std::vector<double>>& covs, std::vector<double>& ws, int max_iter, int dim, int nb_bin){
+    
     
 
-    vector<vector<double>> xs = means; // copy
+    std::vector<std::vector<double>> xs = means; // copy
 
     double entropy_ref = 0.0;
 
@@ -451,7 +453,6 @@ void getMode(vector<vector<double>>& means, vector<vector<double>>& covs, vector
     // }
     // cout<<endl;
 
-    
 
     for(int iter=0; iter<max_iter; iter++){
 
@@ -459,7 +460,7 @@ void getMode(vector<vector<double>>& means, vector<vector<double>>& covs, vector
         
         int n = means.size();
 
-        vector<vector<double>> fx(n, vector<double>(3));
+        std::vector<std::vector<double>> fx(n, std::vector<double>(3));
         
 
         // omp_set_num_threads(20);
@@ -467,7 +468,7 @@ void getMode(vector<vector<double>>& means, vector<vector<double>>& covs, vector
         for(int i=0; i<n; i++){
             
             // calculate ks(xi)
-            vector<double> ks(n);
+            std::vector<double> ks(n);
 
             for(int j=0; j<n; j++){
                 ks[j] = ws[i]*calcNormalPDF(xs[j], means[i], covs[i], dim) + 1e-7; // ks(xi) += k_ij
@@ -477,8 +478,8 @@ void getMode(vector<vector<double>>& means, vector<vector<double>>& covs, vector
 
             normalizeVector(ks);
 
-            vector<double> kinfm_sum = {0, 0, 0};
-            vector<double> kinfm_mean_sum = {0, 0, 0};
+            std::vector<double> kinfm_sum = {0, 0, 0};
+            std::vector<double> kinfm_mean_sum = {0, 0, 0};
 
             // calculate f(xi)
             for(int j=0; j<n; j++){                
@@ -496,7 +497,7 @@ void getMode(vector<vector<double>>& means, vector<vector<double>>& covs, vector
 
         //cout<<"in loop : "<<fx[0][0]<<" "<<fx[0][1]<<" "<<fx[0][2]<<endl;
 
-        vector<double> delta(n);
+        std::vector<double> delta(n);
         
         for(int i=0; i<n; i++){
             for(int k=0; k<3; k++){
@@ -514,7 +515,7 @@ void getMode(vector<vector<double>>& means, vector<vector<double>>& covs, vector
             maxDelta = *max_element(delta.begin(), delta.end());
             bin_size = (maxDelta - minDelta)/((double)(nb_bin-1));   
         }
-        vector<double> hist(nb_bin, 0);
+        std::vector<double> hist(nb_bin, 0);
 
         for(auto& d : delta){
             double idx = (int)(trunc((d - minDelta)/bin_size));
@@ -549,13 +550,13 @@ void getMode(vector<vector<double>>& means, vector<vector<double>>& covs, vector
     int MINIMUM_POINTS = 1;
     double EPSILON = 0.01;
 
-    vector<Point> pts;
+    std::vector<Point> pts;
     vec2pts(xs, pts);
 
     DBSCAN ds(MINIMUM_POINTS, EPSILON, pts);
     ds.run();
 
-    vector<int> class_id(pts.size());
+    std::vector<int> class_id(pts.size());
 
     getClass(ds.m_points, class_id);
 
@@ -570,9 +571,9 @@ void getMode(vector<vector<double>>& means, vector<vector<double>>& covs, vector
         }
     }
 
-    vector<vector<double>> means_new(nb_cluster, vector<double>(dim));
-    vector<vector<double>> covs_new(nb_cluster, vector<double>(dim));
-    vector<double> ws_new(nb_cluster);
+    std::vector<std::vector<double>> means_new(nb_cluster, std::vector<double>(dim));
+    std::vector<std::vector<double>> covs_new(nb_cluster, std::vector<double>(dim));
+    std::vector<double> ws_new(nb_cluster);
     
     for(int i=0; i<class_id.size(); i++){
         ws_new[class_id[i]-1] += ws[i];
@@ -596,12 +597,12 @@ void getMode(vector<vector<double>>& means, vector<vector<double>>& covs, vector
 
     // double w_max = *max_element(ws.begin(), ws.end());
 
-    // vector<vector<double>> means_new2;
-    // vector<vector<double>> covs_new2;
-    // vector<double> ws_new2;
+    // std::vector<std::vector<double>> means_new2;
+    // std::vector<std::vector<double>> covs_new2;
+    // std::vector<double> ws_new2;
 
     // for(int k=0; k<means.size(); k++){
-    //     if(ws[k] >= w_max*0.5){
+    //     if(ws[k] >= w_max*0.1){
     //         means_new2.push_back(means[k]);
     //         covs_new2.push_back(covs[k]);
     //         ws_new2.push_back(ws[k]);
@@ -615,7 +616,7 @@ void getMode(vector<vector<double>>& means, vector<vector<double>>& covs, vector
 
 
 
-void vec2pts(vector<vector<double>>& pts_in, vector<Point>& pts_out){
+void vec2pts(std::vector<std::vector<double>>& pts_in, std::vector<Point>& pts_out){
 
     for(int i=0; i<pts_in.size(); i++){
         pts_out.push_back(move(Point(pts_in[i])));
@@ -623,15 +624,12 @@ void vec2pts(vector<vector<double>>& pts_in, vector<Point>& pts_out){
 }
 
 
-vector<int> intersection(vector<int> &v1, vector<int> &v2){
-    vector<int> v3;
-
+void intersection(std::vector<int> &v1, std::vector<int> &v2, std::vector<int> &v3){
 
     set_intersection(v1.begin(), v1.end(), v2.begin(), v2.end(), back_inserter(v3));
-    return v3;
 }
 
-void copy_vector(igraph_vector_t *v, vector<int>& vec){
+void copy_vector(igraph_vector_t *v, std::vector<int>& vec){
     for(int i=0; i<vec.size(); i++){
         vec[i] = move((long int)VECTOR(*v)[i]);
     }
@@ -646,7 +644,7 @@ void print_vector(igraph_vector_t *v, FILE *f) {
     fprintf(f, "\n");
 }
 
-void print_std_vector(vector<int>& vec){
+void print_std_vector(std::vector<int>& vec){
     for(int i=0; i<vec.size(); i++){
         cout<<vec[i]<<" ";
     }
@@ -654,16 +652,16 @@ void print_std_vector(vector<int>& vec){
 }
 
 
-void readCSV(string path, vector<vector<int>>& _idx_v, vector<vector<double>>& _odom){
+void readCSV(string path, std::vector<std::vector<int>>& _idx_v, std::vector<std::vector<double>>& _odom){
     string data = path;
     ifstream in(data.c_str());
 
     typedef boost::tokenizer<boost::escaped_list_separator<char>> Tokenizer;
-    vector<string> vec;
+    std::vector<string> vec;
     string line;
 
-    vector<vector<int>> idx_from_to;
-    vector<vector<double>> odometry;
+    std::vector<std::vector<int>> idx_from_to;
+    std::vector<std::vector<double>> odometry;
 
     while (getline(in,line))
     {
@@ -676,8 +674,8 @@ void readCSV(string path, vector<vector<int>>& _idx_v, vector<vector<double>>& _
         double y = stod(vec[4]);
         double h = stod(vec[5]);
 
-        vector<int> idxs = {idx_from, idx_to};
-        vector<double> odom = {x, y, h};
+        std::vector<int> idxs = {idx_from, idx_to};
+        std::vector<double> odom = {x, y, h};
 
         _idx_v.push_back(idxs);
         _odom.push_back(odom);        
@@ -685,16 +683,16 @@ void readCSV(string path, vector<vector<int>>& _idx_v, vector<vector<double>>& _
 
 }
 
-void readCSV_MH(string path, vector<vector<int>>& _idx_v, vector<vector<vector<double>>>& _odom, int last_idx){
+void readCSV_MH(string path, std::vector<std::vector<int>>& _idx_v, std::vector<std::vector<std::vector<double>>>& _odom, int last_idx){
     string data = path;
     ifstream in(data.c_str());
     
     typedef boost::tokenizer<boost::escaped_list_separator<char>> Tokenizer;
-    vector<string> vec;
+    std::vector<string> vec;
     string line;
 
-    vector<vector<int>> idx_from_to;
-    vector<vector<double>> odometry;
+    std::vector<std::vector<int>> idx_from_to;
+    std::vector<std::vector<double>> odometry;
 
     int cnt = 0;
     while (getline(in,line))
@@ -706,6 +704,8 @@ void readCSV_MH(string path, vector<vector<int>>& _idx_v, vector<vector<vector<d
         int idx_to = stoi(vec[3]);
         int nb_odom = stoi(vec[5]);
 
+        
+
         if(idx_to > last_idx){
             break;
         }
@@ -715,8 +715,9 @@ void readCSV_MH(string path, vector<vector<int>>& _idx_v, vector<vector<vector<d
             double y = stod(vec[7]);
             double h = stod(vec[8]);
 
-            vector<int> idxs = {idx_from, idx_to};
-            vector<vector<double>> odom = {{x, y, h}};
+
+            std::vector<int> idxs = {idx_from, idx_to};
+            std::vector<std::vector<double>> odom = {{x, y, h}};
 
             _idx_v.push_back(idxs);
             _odom.push_back(odom);
@@ -729,8 +730,8 @@ void readCSV_MH(string path, vector<vector<int>>& _idx_v, vector<vector<vector<d
             double y2 = stod(vec[10]);
             double h2 = stod(vec[11]);
 
-            vector<int> idxs = {idx_from, idx_to};
-            vector<vector<double>> odom = {{x, y, h},{x2, y2, h2}};
+            std::vector<int> idxs = {idx_from, idx_to};
+            std::vector<std::vector<double>> odom = {{x, y, h},{x2, y2, h2}};
 
             _idx_v.push_back(idxs);
             _odom.push_back(odom);
@@ -739,16 +740,16 @@ void readCSV_MH(string path, vector<vector<int>>& _idx_v, vector<vector<vector<d
 
 }
 
-void readCSV_MH_GT(string path, vector<vector<double>>& _odom, int last_idx){
+void readCSV_MH_GT(string path, std::vector<std::vector<double>>& _odom, int last_idx){
     string data = path;
     ifstream in(data.c_str());
 
     typedef boost::tokenizer<boost::escaped_list_separator<char>> Tokenizer;
-    vector<string> vec;
+    std::vector<string> vec;
     string line;
 
-    vector<vector<int>> idx_from_to;
-    vector<vector<double>> odometry;
+    std::vector<std::vector<int>> idx_from_to;
+    std::vector<std::vector<double>> odometry;
     int cnt = 0;
 
     while (getline(in,line))
@@ -763,7 +764,7 @@ void readCSV_MH_GT(string path, vector<vector<double>>& _odom, int last_idx){
         double y = stod(vec[1]);
         double h = stod(vec[2]);
 
-        vector<double> odom = {x, y, h};
+        std::vector<double> odom = {x, y, h};
 
         _odom.push_back(odom);
         cnt += 1;
@@ -771,12 +772,12 @@ void readCSV_MH_GT(string path, vector<vector<double>>& _odom, int last_idx){
 
 }
 
-double error_per(vector<double>& est, vector<double>& gt){
+double error_per(std::vector<double>& est, std::vector<double>& gt){
     return sqrt(pow(est[0]-gt[0], 2.0) + pow(est[1]-gt[1], 2));
 }
 
 
-vector<double> calcDist(const vector<double>& p1, const vector<double>& p2){
+std::vector<double> calcDist(const std::vector<double>& p1, const std::vector<double>& p2){
     double h1 = p1[2];
     double h2 = p2[2];
 
@@ -803,7 +804,7 @@ vector<double> calcDist(const vector<double>& p1, const vector<double>& p2){
     else if(h2 < pi/2 && h1 > 3.0/2.0*pi){
         h1 -= pi*2;
     }
-    vector<double> result = {abs(p1[0] - p2[0]), abs(p1[1] - p2[1]), abs(p1[2] - p2[2])};
+    std::vector<double> result = {abs(p1[0] - p2[0]), abs(p1[1] - p2[1]), abs(p1[2] - p2[2])};
 
     return result;
 

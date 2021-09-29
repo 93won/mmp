@@ -4,7 +4,7 @@
 int DBSCAN::run()
 {
     int clusterID = 1;
-    vector<Point>::iterator iter;
+    std::vector<Point>::iterator iter;
     for(iter = m_points.begin(); iter != m_points.end(); ++iter)
     {
         if ( iter->clusterID == UNCLASSIFIED )
@@ -21,7 +21,7 @@ int DBSCAN::run()
 
 int DBSCAN::expandCluster(Point point, int clusterID)
 {    
-    vector<int> clusterSeeds = calculateCluster(point);
+    std::vector<int> clusterSeeds = calculateCluster(point);
 
     if ( clusterSeeds.size() < m_minPoints )
     {
@@ -31,7 +31,7 @@ int DBSCAN::expandCluster(Point point, int clusterID)
     else
     {
         int index = 0, indexCorePoint = 0;
-        vector<int>::iterator iterSeeds;
+        std::vector<int>::iterator iterSeeds;
         for( iterSeeds = clusterSeeds.begin(); iterSeeds != clusterSeeds.end(); ++iterSeeds)
         {
             m_points.at(*iterSeeds).clusterID = clusterID;
@@ -43,13 +43,13 @@ int DBSCAN::expandCluster(Point point, int clusterID)
         }
         clusterSeeds.erase(clusterSeeds.begin()+indexCorePoint);
 
-        for( vector<int>::size_type i = 0, n = clusterSeeds.size(); i < n; ++i )
+        for( std::vector<int>::size_type i = 0, n = clusterSeeds.size(); i < n; ++i )
         {
-            vector<int> clusterNeighors = calculateCluster(m_points.at(clusterSeeds[i]));
+            std::vector<int> clusterNeighors = calculateCluster(m_points.at(clusterSeeds[i]));
 
             if ( clusterNeighors.size() >= m_minPoints )
             {
-                vector<int>::iterator iterNeighors;
+                std::vector<int>::iterator iterNeighors;
                 for ( iterNeighors = clusterNeighors.begin(); iterNeighors != clusterNeighors.end(); ++iterNeighors )
                 {
                     if ( m_points.at(*iterNeighors).clusterID == UNCLASSIFIED || m_points.at(*iterNeighors).clusterID == NOISE )
@@ -69,11 +69,11 @@ int DBSCAN::expandCluster(Point point, int clusterID)
     }
 }
 
-vector<int> DBSCAN::calculateCluster(Point point)
+std::vector<int> DBSCAN::calculateCluster(Point point)
 {
     int index = 0;
-    vector<Point>::iterator iter;
-    vector<int> clusterIndex;
+    std::vector<Point>::iterator iter;
+    std::vector<int> clusterIndex;
     for( iter = m_points.begin(); iter != m_points.end(); ++iter)
     {
         if ( calculateDistance(point, *iter) <= m_epsilon )
