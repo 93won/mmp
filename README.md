@@ -16,3 +16,6 @@ cd dlib \
 mkdir build && cd build \
 cmake .. \
 make install
+
+### Example - Manhattan city 3500 (M-3500) data
+![result](https://user-images.githubusercontent.com/38591115/135188216-e88cc4d4-a32f-4caa-86d0-22ffdfd77ffc.jpg)
